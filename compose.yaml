@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: service_account
+      POSTGRES_PASSWORD: service_secrets
