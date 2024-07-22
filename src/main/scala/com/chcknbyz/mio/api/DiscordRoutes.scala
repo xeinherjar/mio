@@ -1,24 +1,24 @@
 package com.chcknbyz.mio.api
 
-import org.apache.pekko.http.scaladsl.server.Directives
-import org.bouncycastle.crypto.Signer
-import org.bouncycastle.crypto.params.{Ed25519PrivateKeyParameters, Ed25519PublicKeyParameters}
-import org.bouncycastle.crypto.signers.Ed25519Signer
 import java.nio.charset.StandardCharsets
-import com.chcknbyz.mio.models.Discord.Interaction
-import com.chcknbyz.mio.models.Discord
-import com.chcknbyz.mio.repos.dto.DiscordJsonSupport
 
-import org.apache.pekko.http.scaladsl.Http
-import org.apache.pekko.http.scaladsl.model._
-
+import cats.syntax.all._
 import com.chcknbyz.mio.models.Configs.DiscordConfig
-import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import spray.json._
+import com.chcknbyz.mio.models.Discord.Interaction
+import com.chcknbyz.mio.models.{Dice, Discord}
+import com.chcknbyz.mio.repos.dto.DiscordJsonSupport.given
+import com.github.pjfanning.pekkohttpcirce.ErrorAccumulatingCirceSupport._
+import io.circe.syntax._
+import org.apache.pekko.http.scaladsl.model._
+import org.apache.pekko.http.scaladsl.server.Directives
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers._
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
+import org.bouncycastle.crypto.signers.Ed25519Signer
 
-class DiscordRoutes(val config: DiscordConfig) extends Directives with DiscordJsonSupport {
+class DiscordRoutes(val config: DiscordConfig) extends Directives {
   val validateDiscordRequest = (headerValueByName("X-Signature-Ed25519") & headerValueByName(
-    "X-Signature-Timestamp"
+    "X-Signature-Timestamp",
   ) & entity(as[String])).tflatMap[Unit] { case (signature, timestamp, body) =>
     def strToHex(s: String): Array[Byte] =
       s.sliding(2, 2).toArray.map(Integer.parseInt(_, 16).toByte)
@@ -30,7 +30,7 @@ class DiscordRoutes(val config: DiscordConfig) extends Directives with DiscordJs
 
     verifier.verifySignature(strToHex(signature)) match {
       case true  => pass
-      case false => complete(StatusCodes.BadRequest)
+      case false => complete(HttpResponse(StatusCodes.BadRequest, entity = "Bad Signature"))
     }
 
   }
@@ -40,19 +40,50 @@ class DiscordRoutes(val config: DiscordConfig) extends Directives with DiscordJs
         get(complete("Awake")),
         (post & validateDiscordRequest & entity(as[Discord.Interaction])) { interaction =>
           interaction.`type` match {
-            case Discord.InteractionType.ApplicationCommand => {
-              val data = interaction.data.map(_.convertTo[Discord.ApplicationCommandData])
+            case Discord.InteractionType.ApplicationCommand =>
+              val data = interaction.data.map(_.as[Discord.ApplicationCommandData])
+              data match
+                case None => complete(HttpResponse(StatusCodes.BadRequest, entity = "Missing Interaction Data"))
+                case Some(Left(err)) => complete(HttpResponse(StatusCodes.BadRequest, entity = s"DECODE: $err"))
+                case Some(Right(acd)) =>
+                  acd.options match
+                    case None => complete(HttpResponse(StatusCodes.BadRequest, entity = "Missing Command"))
+                    case l @ Some(head :: tail) if !l.isEmpty =>
+                      head.name match
+                        // TODO: Enumerate commands, move to Algebra
+                        case "roll" =>
+                          val diceRoll = head.value.flatMap(_.asString).getOrElse("")
+                          val diceResult = Dice.parseRoll.parseAll(diceRoll).map(Dice.result)
+                          complete(
+                            diceResult.fold(
+                              errors => HttpResponse(StatusCodes.BadRequest, entity = ""),
+                              result =>
+                                Discord
+                                  .InteractionResponse(
+                                    Discord.InteractionCallbackType.ChannelMessageWithSource,
+                                    Discord
+                                      .InteractionResponseData(
+                                        result.toString.some,
+                                      )
+                                      .some,
+                                  )
+                                  .asJson,
+                            ),
+                          )
 
-              ???
-            }
+                        case _ => complete(HttpResponse(StatusCodes.BadRequest, entity = "Not a valid command"))
+                    case _ => complete(HttpResponse(StatusCodes.BadRequest, entity = "Not a valid command"))
+
             case Discord.InteractionType.Ping =>
-              complete(Discord.InteractionCallbackType.Pong)
+              complete(
+                Discord.InteractionCallbackType.Pong.asJson,
+              )
             case Discord.InteractionType.ModalSubmit                    => ???
             case Discord.InteractionType.MessasgeComponent              => ???
             case Discord.InteractionType.ApplicationCommandAutocomplete => ???
           }
           // complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s""))
-        }
+        },
       )
     }
 

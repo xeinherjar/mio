@@ -1,26 +1,15 @@
 package com.chcknbyz.mio.app
 
+import scala.io.StdIn
+
+import com.chcknbyz.mio.api.DiscordRoutes
+import com.chcknbyz.mio.models.Configs.DiscordConfig
+import com.chcknbyz.mio.models.Discord
+import com.chcknbyz.mio.repos.Discord.LiveDiscord
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.pekko.actor.typed.ActorSystem
 import org.apache.pekko.actor.typed.scaladsl.Behaviors
 import org.apache.pekko.http.scaladsl.Http
-import org.apache.pekko.http.scaladsl.model._
-import org.apache.pekko.http.scaladsl.server.Directives._
-import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import spray.json._
-import spray.json.DefaultJsonProtocol._
-
-import scala.io.StdIn
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.Config
-
-import org.bouncycastle.crypto.Signer
-import org.bouncycastle.crypto.params.{Ed25519PrivateKeyParameters, Ed25519PublicKeyParameters}
-import org.bouncycastle.crypto.signers.Ed25519Signer
-import java.nio.charset.StandardCharsets
-import com.chcknbyz.mio.models.Discord.Interaction
-import com.chcknbyz.mio.models.Discord
-import com.chcknbyz.mio.models.Configs.DiscordConfig
-import com.chcknbyz.mio.api.DiscordRoutes
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -34,15 +23,17 @@ object Main {
       config.getString("discord.secrets.ApplicationID"),
       config.getString("discord.secrets.PublicKey"),
       config.getString("discord.secrets.ClientSecret"),
-      config.getString("discord.secrets.Token")
+      config.getString("discord.secrets.Token"),
     )
 
     val route = new DiscordRoutes(discordConfig).route
+    val discordRepo = LiveDiscord(discordConfig, Http())
+    // discordRepo.installSlashCommands
 
     val bindingFuture = Http().newServerAt("localhost", 8080).bind(route)
 
     println(
-      s"Server now online. Please navigate to http://localhost:8080/hello\nPress RETURN to stop..."
+      s"Server now online. Please navigate to http://localhost:8080/hello\nPress RETURN to stop...",
     )
     StdIn.readLine() // let it run until user presses return
     bindingFuture

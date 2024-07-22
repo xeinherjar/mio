@@ -1,6 +1,6 @@
 package com.chcknbyz.mio.models
 
-import spray.json._
+import io.circe.Json
 
 object Discord {
   type Snowflake = String
@@ -35,23 +35,23 @@ object Discord {
 
   // Data differs depending on type, PING is nothing
   case class ApplicationCommandData(
-    id: String,
-    name: String,
-    `type`: Int, // TODO enum
-    // resolved: Option....
-    options: Option[List[ApplicationCommandInteractionDataOption]],
-    guildId: Option[String],
-    targetId: Option[String]
+      id: String,
+      name: String,
+      `type`: Int, // TODO enum
+      // resolved: Option....
+      options: Option[List[ApplicationCommandInteractionDataOption]],
+      guildId: Option[String],
+      targetId: Option[String],
   )
 
   // https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-application-command-interaction-data-option-structure
   // value and options are mutually exclusive, maybe I should use a trait?
   case class ApplicationCommandInteractionDataOption(
-    name: String,
-    `type`: ApplicationCommandOptionType,
-    value: Option[JsValue], // String, Integer, Double, Boolean
-    options: Option[List[ApplicationCommandInteractionDataOption]],
-    focused: Option[Boolean]
+      name: String,
+      `type`: ApplicationCommandOptionType,
+      value: Option[Json], // String, Integer, Double, Boolean
+      options: Option[List[ApplicationCommandInteractionDataOption]],
+      focused: Option[Boolean],
   )
 
   // https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-structure
@@ -61,29 +61,29 @@ object Discord {
       description: String,
       choices: Option[List[CommandOptionChoice]] = None, // STRING, INTEGER, NUMBER
       options: Option[List[ApplicationCommandOption]] = None, // If subcommand, these are the params
-      required: Boolean = false
+      required: Boolean = false,
   )
 
   // https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-choice-structure
   // value: string, integer, double
   // string max length of 100
-  case class CommandOptionChoice(name: String, value: JsValue)
+  case class CommandOptionChoice(name: String, value: Json)
 
   // https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-interaction-data
   case class Interaction(
-      id: Snowflake,
-      applicationId: Snowflake,
+      // id: String,
+      // applicationId: String,
       `type`: InteractionType,
-      data: Option[JsValue], // Todo: Option[InteractionData],
-      guildId: Option[Snowflake],
+      data: Option[Json], // Todo: Option[InteractionData],
+      // guildId: Option[String],
       // channel?
-      channelId: Option[Snowflake],
+      // channelId: Option[String],
       // member?
       // user?
-      token: String,
-      version: Int,
-      message: Option[JsValue],
-      appPermissions: Option[String]
+      // token: String,
+      // version: Int,
+      // message: Option[Json],
+      // appPermissions: Option[String]
       // local?
       // guildLocale
       // entitlements
@@ -94,7 +94,7 @@ object Discord {
   // https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-response-structure
   case class InteractionResponse(
       `type`: InteractionCallbackType,
-      data: Option[InteractionResponseData] = None
+      data: Option[InteractionResponseData] = None,
   )
 
   // https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-response-object-interaction-callback-data-structure

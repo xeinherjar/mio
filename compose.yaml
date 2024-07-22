@@ -1,7 +1,6 @@
 version: '3.9'
 
 services:
-
   db:
     image: postgres
     restart: always
@@ -10,3 +9,26 @@ services:
     environment:
       POSTGRES_USER: service_account
       POSTGRES_PASSWORD: service_secrets
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U service_account -d postgres'"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - net
+
+  liquidbase:
+    image: liquibase/liquibase:4.28-alpine
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    command: --defaults-file=/liquibase/liquibase.properties update
+    volumes:
+      - ./sql/liquibase/liquibase.properties:/liquibase/liquibase.properties
+      - ./sql/liquibase/changelog.yaml:/liquibase/changelog.yaml
+    networks:
+      - net
+networks:
+  net: {}

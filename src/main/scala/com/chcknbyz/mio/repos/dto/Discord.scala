@@ -1,153 +1,125 @@
 package com.chcknbyz.mio.repos.dto
 
-import spray.json._
-import org.apache.pekko.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import com.chcknbyz.mio.models.Discord._
+import io.circe._
+import io.circe.derivation.Configuration
+import io.circe.generic.semiauto._
 
-import com.chcknbyz.mio.models.Discord.*
+// TODO: how to return errors?
+object DiscordJsonSupport {
 
-trait DiscordJsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
-  given StringJsonFormat.type = StringJsonFormat
+  given Configuration = Configuration.default.withSnakeCaseMemberNames
 
-  given ApplicationCommandTypeFormat: RootJsonFormat[ApplicationCommandType] =
-    new RootJsonFormat[ApplicationCommandType] {
-      // implicit object ApplicationCommandTypeFormat extends RootJsonFormat[ApplicationCommandType] {
-      def read(json: JsValue): ApplicationCommandType = json match
-        case JsNumber(value) =>
-          value.toInt match {
-            case 1 => ApplicationCommandType.ChatInput
-            case 2 => ApplicationCommandType.User
-            case 3 => ApplicationCommandType.Message
-            case n => deserializationError("Expected (1-3), recieved: $n")
-          }
-        case otherwise => deserializationError("Expected Int, recieved: $otherwise ")
+  given Decoder[ApplicationCommand] = deriveDecoder
+  given Encoder[ApplicationCommand] = deriveEncoder
 
-      def write(obj: ApplicationCommandType): JsValue = obj match
-        case ApplicationCommandType.ChatInput => JsNumber(1)
-        case ApplicationCommandType.User      => JsNumber(2)
-        case ApplicationCommandType.Message   => JsNumber(3)
-    }
+  given Decoder[ApplicationCommandData] = deriveDecoder
+  given Encoder[ApplicationCommandData] = deriveEncoder
 
-  given ApplicationCommandOptionTypeFormat: RootJsonFormat[ApplicationCommandOptionType] =
-    new RootJsonFormat[ApplicationCommandOptionType] {
-      def read(json: JsValue): ApplicationCommandOptionType = json match
-        case JsNumber(value) =>
-          value.toInt match
-            case 1  => ApplicationCommandOptionType.SubCommand
-            case 2  => ApplicationCommandOptionType.SubCommandGroup
-            case 3  => ApplicationCommandOptionType.String
-            case 4  => ApplicationCommandOptionType.Integer
-            case 5  => ApplicationCommandOptionType.Boolean
-            case 6  => ApplicationCommandOptionType.User
-            case 7  => ApplicationCommandOptionType.Channel
-            case 8  => ApplicationCommandOptionType.Role
-            case 9  => ApplicationCommandOptionType.Mentionable
-            case 10 => ApplicationCommandOptionType.Number
-            case 11 => ApplicationCommandOptionType.Attachment
-            case n  => deserializationError("Expected (1-11), received: $n")
-        case otherwise => deserializationError("Expected Int, recieved: $otherwise ")
+  given Decoder[ApplicationCommandOption] = deriveDecoder
+  given Encoder[ApplicationCommandOption] = deriveEncoder
 
-      def write(obj: ApplicationCommandOptionType): JsValue = obj match
-        case ApplicationCommandOptionType.SubCommand      => JsNumber(1)
-        case ApplicationCommandOptionType.SubCommandGroup => JsNumber(2)
-        case ApplicationCommandOptionType.String          => JsNumber(3)
-        case ApplicationCommandOptionType.Integer         => JsNumber(4)
-        case ApplicationCommandOptionType.Boolean         => JsNumber(5)
-        case ApplicationCommandOptionType.User            => JsNumber(6)
-        case ApplicationCommandOptionType.Channel         => JsNumber(7)
-        case ApplicationCommandOptionType.Role            => JsNumber(8)
-        case ApplicationCommandOptionType.Mentionable     => JsNumber(9)
-        case ApplicationCommandOptionType.Number          => JsNumber(10)
-        case ApplicationCommandOptionType.Attachment      => JsNumber(11)
-    }
+  given Decoder[CommandOptionChoice] = deriveDecoder
+  given Encoder[CommandOptionChoice] = deriveEncoder
 
-  implicit object InteractionTypeFormat extends RootJsonFormat[InteractionType] {
-    def read(json: JsValue): InteractionType =
-      json match {
-        case JsNumber(number) =>
-          number.toInt match {
-            case 1         => InteractionType.Ping
-            case 2         => InteractionType.ApplicationCommand
-            case 3         => InteractionType.MessasgeComponent
-            case 4         => InteractionType.ApplicationCommandAutocomplete
-            case 5         => InteractionType.ModalSubmit
-            case otherwise => deserializationError("Expected (1-5), recieved: $otherwise ")
-          }
-        case otherwise => deserializationError("Expected Int, recieved: $otherwise ")
-      }
+  given Decoder[Interaction] = deriveDecoder
+  given Encoder[Interaction] = deriveEncoder
 
-    def write(obj: InteractionType): JsValue =
-      obj match {
-        case InteractionType.Ping                           => JsNumber(1)
-        case InteractionType.ApplicationCommand             => JsNumber(2)
-        case InteractionType.MessasgeComponent              => JsNumber(3)
-        case InteractionType.ApplicationCommandAutocomplete => JsNumber(4)
-        case InteractionType.ModalSubmit                    => JsNumber(5)
-      }
-  }
+  given Decoder[ApplicationCommandInteractionDataOption] = deriveDecoder
+  given Encoder[ApplicationCommandInteractionDataOption] = deriveEncoder
 
+  given Decoder[InteractionResponseData] = deriveDecoder
+  given Encoder[InteractionResponseData] = deriveEncoder
+  given Decoder[InteractionResponse] = deriveDecoder
+  given Encoder[InteractionResponse] = deriveEncoder
 
+  given Decoder[InteractionType] =
+    (c: HCursor) =>
+      for {
+        n <- c.as[Int]
+      } yield n match
+        case 1 => InteractionType.Ping
+        case 2 => InteractionType.ApplicationCommand
+        case 3 => InteractionType.MessasgeComponent
+        case 4 => InteractionType.ApplicationCommandAutocomplete
+        case 5 => InteractionType.ModalSubmit
 
-  given applicationCommandInteractionDataOptionFormat: RootJsonFormat[ApplicationCommandInteractionDataOption] = jsonFormat(
-    ApplicationCommandInteractionDataOption.apply,
-    "name",
-    "type",
-    "value",
-    "options",
-    "focused"
-  )
+  given Encoder[InteractionType] = v =>
+    v match
+      case InteractionType.Ping                           => Json.fromInt(1)
+      case InteractionType.ApplicationCommand             => Json.fromInt(2)
+      case InteractionType.MessasgeComponent              => Json.fromInt(3)
+      case InteractionType.ApplicationCommandAutocomplete => Json.fromInt(4)
+      case InteractionType.ModalSubmit                    => Json.fromInt(5)
 
-  given applicationCommandDataFormat: RootJsonFormat[ApplicationCommandData] = jsonFormat(
-    ApplicationCommandData.apply,
-    "id",
-    "name",
-    "type",
-    "options",
-    "guildId",
-    "targetId"
-  )
+  given Decoder[ApplicationCommandType] =
+    (c: HCursor) =>
+      for {
+        n <- c.as[Int]
+      } yield n match
+        case 1 => ApplicationCommandType.ChatInput
+        case 2 => ApplicationCommandType.User
+        case 3 => ApplicationCommandType.Message
 
-  given interactionFormat: RootJsonFormat[Interaction] = jsonFormat(
-    Interaction.apply,
-    "id",
-    "application_id",
-    "type",
-    "data",
-    "guild_id",
-    "channel_id",
-    "token",
-    "version",
-    "message",
-    "app_permissions"
-  )
+  given Encoder[ApplicationCommandType] = v =>
+    v match
+      case ApplicationCommandType.ChatInput => Json.fromInt(1)
+      case ApplicationCommandType.User      => Json.fromInt(2)
+      case ApplicationCommandType.Message   => Json.fromInt(3)
 
-  implicit object InteractionCallbackTypeFormat extends RootJsonFormat[InteractionCallbackType] {
-    def read(json: JsValue): InteractionCallbackType =
-      json match {
-        case JsNumber(number) =>
-          number.toInt match {
-            case 1         => InteractionCallbackType.Pong
-            case 4         => InteractionCallbackType.ChannelMessageWithSource
-            case 5         => InteractionCallbackType.DeferredChannelMessageWithSource
-            case 6         => InteractionCallbackType.DeferredUpdateMessage
-            case 7         => InteractionCallbackType.UpdateMessage
-            case 8         => InteractionCallbackType.ApplicationCommandAutocompleteResult
-            case 9         => InteractionCallbackType.Modal
-            case 10        => InteractionCallbackType.PremiumRequired
-            case otherwise => deserializationError("Expected (1 or 4-10), recieved: $otherwise")
-          }
-        case otherwise => deserializationError("Expected Int, recieved: $otherwise")
-      }
+  given Decoder[ApplicationCommandOptionType] =
+    (c: HCursor) =>
+      for {
+        n <- c.as[Int]
+      } yield n match
+        case 1  => ApplicationCommandOptionType.SubCommand
+        case 2  => ApplicationCommandOptionType.SubCommandGroup
+        case 3  => ApplicationCommandOptionType.String
+        case 4  => ApplicationCommandOptionType.Integer
+        case 5  => ApplicationCommandOptionType.Boolean
+        case 6  => ApplicationCommandOptionType.User
+        case 7  => ApplicationCommandOptionType.Channel
+        case 8  => ApplicationCommandOptionType.Role
+        case 9  => ApplicationCommandOptionType.Mentionable
+        case 10 => ApplicationCommandOptionType.Number
+        case 11 => ApplicationCommandOptionType.Attachment
 
-    def write(obj: InteractionCallbackType): JsValue =
-      obj match {
-        case InteractionCallbackType.Pong                                 => JsNumber(1)
-        case InteractionCallbackType.ChannelMessageWithSource             => JsNumber(4)
-        case InteractionCallbackType.DeferredChannelMessageWithSource     => JsNumber(5)
-        case InteractionCallbackType.DeferredUpdateMessage                => JsNumber(6)
-        case InteractionCallbackType.UpdateMessage                        => JsNumber(7)
-        case InteractionCallbackType.ApplicationCommandAutocompleteResult => JsNumber(8)
-        case InteractionCallbackType.Modal                                => JsNumber(9)
-        case InteractionCallbackType.PremiumRequired                      => JsNumber(10)
-      }
-  }
+  given Encoder[ApplicationCommandOptionType] = v =>
+    v match
+      case ApplicationCommandOptionType.SubCommand                              => Json.fromInt(1)
+      case ApplicationCommandOptionType.SubCommandGroup                         => Json.fromInt(2)
+      case com.chcknbyz.mio.models.Discord.ApplicationCommandOptionType.String  => Json.fromInt(3)
+      case com.chcknbyz.mio.models.Discord.ApplicationCommandOptionType.Integer => Json.fromInt(4)
+      case com.chcknbyz.mio.models.Discord.ApplicationCommandOptionType.Boolean => Json.fromInt(5)
+      case ApplicationCommandOptionType.User                                    => Json.fromInt(6)
+      case ApplicationCommandOptionType.Channel                                 => Json.fromInt(7)
+      case ApplicationCommandOptionType.Role                                    => Json.fromInt(8)
+      case ApplicationCommandOptionType.Mentionable                             => Json.fromInt(9)
+      case com.chcknbyz.mio.models.Discord.ApplicationCommandOptionType.Number  => Json.fromInt(10)
+      case ApplicationCommandOptionType.Attachment                              => Json.fromInt(11)
+
+  given Decoder[InteractionCallbackType] =
+    (c: HCursor) =>
+      for {
+        n <- c.as[Int]
+      } yield n match
+        case 1  => InteractionCallbackType.Pong
+        case 4  => InteractionCallbackType.ChannelMessageWithSource
+        case 5  => InteractionCallbackType.DeferredChannelMessageWithSource
+        case 6  => InteractionCallbackType.DeferredUpdateMessage
+        case 7  => InteractionCallbackType.UpdateMessage
+        case 8  => InteractionCallbackType.ApplicationCommandAutocompleteResult
+        case 9  => InteractionCallbackType.Modal
+        case 10 => InteractionCallbackType.PremiumRequired
+
+  given Encoder[InteractionCallbackType] = v =>
+    v match
+      case InteractionCallbackType.Pong                                 => Json.fromInt(1)
+      case InteractionCallbackType.ChannelMessageWithSource             => Json.fromInt(4)
+      case InteractionCallbackType.DeferredChannelMessageWithSource     => Json.fromInt(5)
+      case InteractionCallbackType.DeferredUpdateMessage                => Json.fromInt(6)
+      case InteractionCallbackType.UpdateMessage                        => Json.fromInt(7)
+      case InteractionCallbackType.ApplicationCommandAutocompleteResult => Json.fromInt(8)
+      case InteractionCallbackType.Modal                                => Json.fromInt(9)
+      case InteractionCallbackType.PremiumRequired                      => Json.fromInt(10)
 }

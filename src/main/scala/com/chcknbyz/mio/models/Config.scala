@@ -5,6 +5,6 @@ object Configs {
       applicationId: String,
       publicKey: String,
       clientSecret: String,
-      token: String
+      token: String,
   )
 }
