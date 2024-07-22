@@ -4,7 +4,6 @@ import scala.io.StdIn
 
 import com.chcknbyz.mio.api.DiscordRoutes
 import com.chcknbyz.mio.models.Configs.DiscordConfig
-import com.chcknbyz.mio.models.Discord
 import com.chcknbyz.mio.repos.Discord.LiveDiscord
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.pekko.actor.typed.ActorSystem
