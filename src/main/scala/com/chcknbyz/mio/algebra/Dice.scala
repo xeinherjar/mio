@@ -1,4 +1,4 @@
-package com.chcknbyz.mio.models
+package com.chcknbyz.mio.algebra
 
 import scala.util.Random
 
@@ -6,7 +6,6 @@ import cats.implicits._
 import cats.parse.Parser
 import cats.parse.Rfc5234.digit
 
-// TODO: by should be Dice so we can do things like 2d10 + 4d8 + 10
 trait Exp
 case class Dice(count: Int, size: Int) extends Exp
 case class Number(value: Int) extends Exp
@@ -33,7 +32,7 @@ object Dice {
 
   def parserP = diceP ~ modiferP.rep0
 
-  // Todo, ignore whitespace, remove recursiv
+  // TODO: ignore whitespace, remove recursive
   val parseRoll: Parser[Exp] = Parser.recursive[Exp] { recurse =>
     parserP.map { parsed =>
       parsed._2.foldLeft(parsed._1: Exp) { case (acc, (op, exp)) =>

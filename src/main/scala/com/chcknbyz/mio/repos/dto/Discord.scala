@@ -86,17 +86,17 @@ object DiscordJsonSupport {
 
   given Encoder[ApplicationCommandOptionType] = v =>
     v match
-      case ApplicationCommandOptionType.SubCommand                              => Json.fromInt(1)
-      case ApplicationCommandOptionType.SubCommandGroup                         => Json.fromInt(2)
-      case com.chcknbyz.mio.models.Discord.ApplicationCommandOptionType.String  => Json.fromInt(3)
-      case com.chcknbyz.mio.models.Discord.ApplicationCommandOptionType.Integer => Json.fromInt(4)
-      case com.chcknbyz.mio.models.Discord.ApplicationCommandOptionType.Boolean => Json.fromInt(5)
-      case ApplicationCommandOptionType.User                                    => Json.fromInt(6)
-      case ApplicationCommandOptionType.Channel                                 => Json.fromInt(7)
-      case ApplicationCommandOptionType.Role                                    => Json.fromInt(8)
-      case ApplicationCommandOptionType.Mentionable                             => Json.fromInt(9)
-      case com.chcknbyz.mio.models.Discord.ApplicationCommandOptionType.Number  => Json.fromInt(10)
-      case ApplicationCommandOptionType.Attachment                              => Json.fromInt(11)
+      case ApplicationCommandOptionType.SubCommand      => Json.fromInt(1)
+      case ApplicationCommandOptionType.SubCommandGroup => Json.fromInt(2)
+      case ApplicationCommandOptionType.String          => Json.fromInt(3)
+      case ApplicationCommandOptionType.Integer         => Json.fromInt(4)
+      case ApplicationCommandOptionType.Boolean         => Json.fromInt(5)
+      case ApplicationCommandOptionType.User            => Json.fromInt(6)
+      case ApplicationCommandOptionType.Channel         => Json.fromInt(7)
+      case ApplicationCommandOptionType.Role            => Json.fromInt(8)
+      case ApplicationCommandOptionType.Mentionable     => Json.fromInt(9)
+      case ApplicationCommandOptionType.Number          => Json.fromInt(10)
+      case ApplicationCommandOptionType.Attachment      => Json.fromInt(11)
 
   given Decoder[InteractionCallbackType] =
     (c: HCursor) =>

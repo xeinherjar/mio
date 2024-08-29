@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   db:
-    image: postgres
+    image: postgres:alpine
     restart: always
     ports:
       - 5432:5432
@@ -30,5 +30,12 @@ services:
       - ./sql/liquibase/changelog.yaml:/liquibase/changelog.yaml
     networks:
       - net
+
+  cassandra:
+    image: cassandra:5.0
+    ports:
+      - 9042:9042
+    environment:
+      - CASSANDRA_CLUSTER_NAME=pekko-cassandra-cluster
 networks:
   net: {}

@@ -1,4 +1,4 @@
-# Mio [Multiple In Out]
+# Mio
 A Discord bot to learn Scala apps and play TTRPGS
 
 ## Config
@@ -15,17 +15,33 @@ discord.secrets {
 
 ## Running Locally
 - Proxy webhooks: `ngrok http 9000 --domain=next-mammoth-beloved.ngrok-free.app`
+- docker exec -it mio-pekko-cassandra-1 cqlsh
+- select * from pekko.messages;
 
 ## TODO
-- add pekko-persistince with casandra (CQRS)
+- add pekko-persistince with casandra (CQRS)?
 - add postgres (slick)?
-- liquibase or flyway setup
-- actor per member
+- actor per member/game
 - add endpoints for http AND gRPC
+  - tapir? https://github.com/softwaremill/tapir
 - add auth for non discord interactions
   - OAuth - Google, Github, Discord
   - [https://www.oauth.com](https://www.oauth.com)
+  - https://www.jannikarndt.de/blog/2018/10/oauth2-akka-http/
+  - https://www.youtube.com/watch?v=NZwnZhwVPrs (RockJVM, http4s + OAuth)
   - Credentials.Provided.verify(String) <- prevent timing attacks
+- Game Hierarchy
+  - Game has:
+    - GameMaster, System, Players
+  - Game can:
+    - Create, Delete, Pause, Add/Remove Players, GM
+  - Join/Create/Invite
+  - Players add stats, other data - trait with per game impl?
+  - GM add data
+- UI
+  - GM and Players to add/view things
+  - Send messages to Discord from Bot with UI
+
 
 ## Directory Layout
 - actors

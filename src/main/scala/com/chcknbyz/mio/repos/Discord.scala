@@ -32,6 +32,11 @@ object Discord {
             "roll",
             "roll some dice",
           ),
+          ApplicationCommandOption(
+            ApplicationCommandOptionType.String,
+            "game",
+            "game option",
+          ),
         ).some,
         true,
       )

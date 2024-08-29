@@ -1,22 +1,33 @@
 package com.chcknbyz.mio.api
 
 import java.nio.charset.StandardCharsets
-
-import cats.syntax.all._
+import cats.implicits._
+import cats.syntax.all.*
+import com.chcknbyz.mio.actors.Discord as DiscordActor
+import com.chcknbyz.mio.algebra.Dice
 import com.chcknbyz.mio.models.Configs.DiscordConfig
+import com.chcknbyz.mio.models.Discord
 import com.chcknbyz.mio.models.Discord.Interaction
-import com.chcknbyz.mio.models.{Dice, Discord}
 import com.chcknbyz.mio.repos.dto.DiscordJsonSupport.given
-import com.github.pjfanning.pekkohttpcirce.ErrorAccumulatingCirceSupport._
-import io.circe.syntax._
-import org.apache.pekko.http.scaladsl.model._
+import com.github.pjfanning.pekkohttpcirce.ErrorAccumulatingCirceSupport.*
+import io.circe.syntax.*
+import org.apache.pekko.actor.typed.ActorRef
+import org.apache.pekko.http.scaladsl.model.*
 import org.apache.pekko.http.scaladsl.server.Directives
-import org.apache.pekko.http.scaladsl.server.Directives._
-import org.apache.pekko.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers._
+import org.apache.pekko.http.scaladsl.server.Directives.*
+import org.apache.pekko.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.*
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
 import org.bouncycastle.crypto.signers.Ed25519Signer
+import org.apache.pekko.actor.typed.ActorSystem
+import org.apache.pekko.actor.typed.scaladsl.AskPattern.*
+import org.apache.pekko.util.Timeout
+import scala.util.Failure
+import scala.util.Success
 
-class DiscordRoutes(val config: DiscordConfig) extends Directives {
+class DiscordRoutes(val config: DiscordConfig, discordActor: ActorRef[DiscordActor.Command])(using
+    system: ActorSystem[?],
+    timeout: Timeout,
+) extends Directives { // with ErrorAccumulatingCirceSupport ???
   val validateDiscordRequest = (headerValueByName("X-Signature-Ed25519") & headerValueByName(
     "X-Signature-Timestamp",
   ) & entity(as[String])).tflatMap[Unit] { case (signature, timestamp, body) =>
@@ -51,6 +62,16 @@ class DiscordRoutes(val config: DiscordConfig) extends Directives {
                     case l @ Some(head :: tail) if !l.isEmpty =>
                       head.name match
                         // TODO: Enumerate commands, move to Algebra
+                        case "total" =>
+                          complete(
+                            /*
+                             *onSuccess(
+                             * discordActor.ask(replyTo => DiscordActor.GetTotal(replyTo))(
+                             *  )
+                             *)
+                             */
+                            ???
+                          )
                         case "roll" =>
                           val diceRoll = head.value.flatMap(_.asString).getOrElse("")
                           val diceResult = Dice.parseRoll.parseAll(diceRoll).map(Dice.result)
@@ -58,6 +79,7 @@ class DiscordRoutes(val config: DiscordConfig) extends Directives {
                             diceResult.fold(
                               errors => HttpResponse(StatusCodes.BadRequest, entity = ""),
                               result =>
+                                discordActor.tell(DiscordActor.AddRoll(result))
                                 Discord
                                   .InteractionResponse(
                                     Discord.InteractionCallbackType.ChannelMessageWithSource,
